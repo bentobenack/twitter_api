@@ -1,5 +1,7 @@
-from unicodedata import name
+
 from fastapi import FastAPI
+
+from v1.routes.user import user
 
 app = FastAPI(
     title="Twitter API",
@@ -17,3 +19,4 @@ app = FastAPI(
     ]
 )
 
+app.include_router(user)

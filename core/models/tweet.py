@@ -10,7 +10,7 @@ from sqlalchemy import TIMESTAMP, ForeignKey, Table, Column
 from pymysql import Date
 
 #Settings
-from settings.db import meta
+from config.db import meta
 
 #Tweet Table
 tweets = Table(

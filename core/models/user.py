@@ -3,14 +3,11 @@
 from datetime import datetime
 
 #SQLAlchemy
-from sqlalchemy.sql.sqltypes import Integer, String
-from sqlalchemy import TIMESTAMP, Table, Column
-
-#PyMySQL
-from pymysql import Date
+from sqlalchemy.sql.sqltypes import Integer, String, Date, TIMESTAMP
+from sqlalchemy import Table, Column
 
 #Settings
-from settings.db import meta
+from core.config.db import meta, engine
 
 #User Table
 users = Table(
@@ -25,3 +22,6 @@ users = Table(
     Column("created_at", TIMESTAMP, default=datetime.utcnow),
     Column("update_at", TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
 )
+
+#Create/Generate the table in database
+meta.create_all(engine)
