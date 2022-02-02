@@ -9,25 +9,19 @@ from pydantic import BaseModel, validator
 from pydantic import EmailStr
 from pydantic import Field
 
-class UserBase(BaseModel):
-    user_id: Optional[UUID]= Field(default=None)
-    email: EmailStr = Field(..., example="benackk@email.com")
+from core.schemas.mixins.schemas import IDMixin, TimestampMixin
 
 
-class UserPassword(BaseModel):
+class PasswordMixin(BaseModel):
      password: str = Field(
         ...,
         min_length=8,
-        max_length=64,
+        max_length=255,
         example="H4rdP455w0rd"
     )
      
-     
-class UserLogin(UserBase, UserPassword):
-    pass    
 
-
-class User(UserBase):
+class BaseUser(BaseModel):
     first_name: str = Field(
         ...,
         min_length=1,
@@ -40,6 +34,7 @@ class User(UserBase):
         max_length=50,
         example="Benack"
     )
+    email: EmailStr = Field(..., example="benackk@email.com")
     birth_date: Optional[date] = Field(default=None, example="2022-02-01")
     
     #Validate the age. Must be over 18
@@ -53,5 +48,15 @@ class User(UserBase):
         else:
             return v
     
-class UserRegister(User, UserPassword):
+    
+    
+class UserOut(IDMixin, BaseUser, TimestampMixin):
+    pass    
+
+
+class User(UserOut, PasswordMixin):
+    pass
+    
+    
+class CreateUser(BaseUser, PasswordMixin):
     pass

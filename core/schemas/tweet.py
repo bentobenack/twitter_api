@@ -8,19 +8,34 @@ from uuid import UUID
 from pydantic import BaseModel
 from pydantic import Field
 
-#App 
-from schemas.user import User
+#Schemas
+from schemas.user import UserOut
 
+# Mixins
+from core.schemas.mixins.schemas import IDMixin, TimestampMixin
 
-class Tweet(BaseModel):
-    tweet_id: Optional[UUID] = Field(default=None)
+class BaseTweet(BaseModel):
     content: str = Field(
         ...,
         min_length=1,
         max_length=256,
         example="The First Tweet"
     )
-    created_at: datetime = Field(default=datetime.now())
-    update_at: Optional[datetime] = Field(default=None)
-    created_by: User = Field(...)
     
+    
+class TweetUserID(BaseModel):
+    created_by: int = Field(
+        ...,
+        ge=1,
+        title="User ID",
+        description="User who created the tweet.",
+        example=1
+    )
+    
+    
+class Tweet(IDMixin, BaseTweet, TweetUserID, TimestampMixin):
+    pass
+
+
+class CreateTweet(BaseTweet, TweetUserID):
+    pass
