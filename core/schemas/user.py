@@ -34,8 +34,8 @@ class BaseUser(BaseModel):
         max_length=50,
         example="Benack"
     )
-    email: EmailStr = Field(..., example="benackk@email.com")
-    birth_date: Optional[date] = Field(default=None, example="2022-02-01")
+    email: EmailStr = Field(..., example="benack@email.com")
+    birth_date: Optional[date] = Field(default=None, example="2000-01-01")
     
     #Validate the age. Must be over 18
     @validator('birth_date')
@@ -50,13 +50,13 @@ class BaseUser(BaseModel):
     
     
     
-class UserOut(IDMixin, BaseUser, TimestampMixin):
+class UserOut(TimestampMixin, BaseUser, IDMixin):
     pass    
 
 
-class User(UserOut, PasswordMixin):
+class User(PasswordMixin, UserOut):
     pass
     
     
-class CreateUser(BaseUser, PasswordMixin):
+class CreateUser(PasswordMixin, BaseUser):
     pass

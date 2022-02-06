@@ -26,7 +26,7 @@ class TimestampMixin(BaseModel):
     """
     
     created_at: datetime = Field(
-        default=datetime.utcnow, 
+        default=None, 
         description="The time the document was created."
     )
     updated_at: datetime = Field(

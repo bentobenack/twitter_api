@@ -20,7 +20,7 @@ users = Table(
     Column("email", String(120), unique=True, nullable=False),
     Column("password", String(255), nullable=False),
     Column("created_at", TIMESTAMP, default=datetime.utcnow),
-    Column("update_at", TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    Column("updated_at", TIMESTAMP, default=None, onupdate=datetime.utcnow)
 )
 
 #Create/Generate the table in database
