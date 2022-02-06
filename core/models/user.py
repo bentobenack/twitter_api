@@ -10,7 +10,7 @@ from sqlalchemy import Table, Column
 from core.config.db import meta, engine
 
 #User Table
-users = Table(
+Users = Table(
     "users",
     meta,
     Column("id", Integer, primary_key=True, unique=True, autoincrement=True),

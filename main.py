@@ -2,6 +2,7 @@
 from fastapi import FastAPI
 
 from v1.routes.user import user
+from v1.routes.tweet import tweet
 
 app = FastAPI(
     title="Twitter API",
@@ -20,3 +21,4 @@ app = FastAPI(
 )
 
 app.include_router(user)
+app.include_router(tweet)

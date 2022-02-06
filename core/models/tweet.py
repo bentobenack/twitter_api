@@ -6,19 +6,19 @@ from datetime import datetime
 from sqlalchemy.sql.sqltypes import Integer, String
 from sqlalchemy import TIMESTAMP, ForeignKey, Table, Column
 
-#PyMySQL
-from pymysql import Date
-
 #Settings
-from config.db import meta
+from core.config.db import meta, engine
 
 #Tweet Table
-tweets = Table(
+Tweets = Table(
     "tweets",
     meta,
     Column("id", Integer, primary_key=True, unique=True, autoincrement=True),
     Column("content", String(255), nullable=False),
     Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
     Column("created_at", TIMESTAMP, default=datetime.utcnow),
-    Column("update_at", TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    Column("updated_at", TIMESTAMP, default=None, onupdate=datetime.utcnow)
 )
+
+#Create/Generate the table in database
+meta.create_all(engine)

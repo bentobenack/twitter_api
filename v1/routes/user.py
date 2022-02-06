@@ -1,7 +1,6 @@
 
 import datetime
 from typing import List
-from urllib import response
 
 from fastapi import APIRouter, Body, Path, Response
 from fastapi import HTTPException
@@ -10,7 +9,7 @@ from fastapi import status
 from sqlalchemy.exc import IntegrityError
 from cryptography.fernet import Fernet
 
-from core.models.user import users
+from core.models.user import Users
 from core.config.db import connection
 from core.schemas.user import CreateUser, UserOut
 
@@ -28,13 +27,13 @@ fernet = Fernet(key)
     status_code=status.HTTP_201_CREATED,
     tags=["Users"],
     response_model=UserOut,
-    summary="Sign Up a new user in the app"
+    summary="Create a user"
 )
 def signup(user: CreateUser = Body(...)):
     """
     Sign Up
     
-    This path operation registers a new user in the app.
+    This path operation registers a new user.
     
     Parameters:
     - Request body parameters:
@@ -51,9 +50,9 @@ def signup(user: CreateUser = Body(...)):
     new_user = user.dict()
     new_user["password"] = fernet.encrypt(user.password.encode("utf-8"))
     
-    connection.execute(users.insert().values(new_user))
+    connection.execute(Users.insert().values(new_user))
     
-    res = connection.execute(users.select().where(users.columns.email == new_user["email"])).fetchone()
+    res = connection.execute(Users.select().where(Users.columns.email == new_user["email"])).fetchone()
     
     return res
 
@@ -62,7 +61,7 @@ def signup(user: CreateUser = Body(...)):
 @user.get(
     path="/users",
     tags=["Users"],
-    summary="Get all Users from the app",
+    summary="Get all Users",
     response_model=List[UserOut],
     status_code=status.HTTP_200_OK,
     
@@ -71,7 +70,7 @@ def get_all_users():
     """
     Get All Users
     
-    This path operation shows all users in the app.
+    This path operation shows all users.
     
     Parameters:
         - 
@@ -84,7 +83,7 @@ def get_all_users():
     - created_at: **datetime**
     - updated_at: **datetime**
     """
-    response = connection.execute(users.select()).fetchall()
+    response = connection.execute(Users.select()).fetchall()
    
     return response
 
@@ -95,14 +94,15 @@ def get_all_users():
     tags=["Users"],
     status_code=status.HTTP_200_OK,
     response_model=UserOut,
-    summary="Get a User from the app"
+    summary="Get a User"
 )
 def get_user(
     id: int = Path(
         ...,
         gt=0,
         title="User ID",
-        description="The user ID you want to get"
+        description="The user ID you want to get",
+        example=1
     )
 ):
     """
@@ -123,9 +123,9 @@ def get_user(
     - updated_at: **datetime**
     """
     
-    res = connection.execute(users.select().where(users.columns.id == id)).fetchone()
+    res = connection.execute(Users.select().where(Users.columns.id == id)).fetchone()
     
-    if response is None:
+    if res is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
@@ -139,7 +139,7 @@ def get_user(
     path="/users/{id}",
     tags=["Users"],
     status_code=status.HTTP_200_OK,
-    summary="Update a User in the app",
+    summary="Update a User",
     response_model=UserOut
 )
 def update_user(
@@ -147,7 +147,8 @@ def update_user(
         ...,
         gt=0,
         title="User ID",
-        description="The user ID you want to update"
+        description="The user ID you want to update",
+        example=1
     ),
     user: CreateUser = Body(...)
 ):
@@ -159,7 +160,7 @@ def update_user(
     
     Parameters:
     - Path parameters:
-        - id: **str**
+        - id: **int**
     - Body parameters:
         - user: **CreateUser**
         
@@ -171,7 +172,7 @@ def update_user(
     - created_at: **datetime**
     - updated_at: **datetime**
     """
-    res = connection.execute(users.select().where(users.c.id == id)).fetchone()
+    res = connection.execute(Users.select().where(Users.c.id == id)).fetchone()
     
     if res is None:
         raise HTTPException(
@@ -195,7 +196,7 @@ def update_user(
     
     # Save User
     try:
-        connection.execute(users.update(users.c.id == id).values(**updated_user))
+        connection.execute(Users.update(Users.c.id == id).values(**updated_user))
     except IntegrityError as e:
         
         if "Duplicate entry" in str(e) and "users.email" in str(e):
@@ -218,7 +219,7 @@ def update_user(
     path="/users/{id}",
     tags=["Users"],
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete a User from the app"
+    summary="Delete a User"
 )
 def delete_user(
     id: int = Path(
@@ -231,7 +232,7 @@ def delete_user(
     """
     Delete user
     
-    This path operation deletes a specific user in the app.
+    This path operation deletes a specific user.
     Users can only delete their own information.
     
     Parameters:
@@ -242,7 +243,7 @@ def delete_user(
         -
     """
     
-    user_response = connection.execute(users.select().where(users.c.id == id)).fetchone()
+    user_response = connection.execute(Users.select().where(Users.c.id == id)).fetchone()
     
     if user_response is None:
         raise HTTPException(
@@ -257,6 +258,6 @@ def delete_user(
     #     )
         
     # Delete user     
-    connection.execute(users.delete().where(users.c.id == id))
+    connection.execute(Users.delete().where(Users.c.id == id))
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
