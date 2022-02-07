@@ -1,18 +1,15 @@
 
-import datetime
-from typing import List
-import pydottie
+from typing import List, Optional
 
-from fastapi import APIRouter, Body, Path, Response
+from fastapi import APIRouter, Body, Depends, Path, Query, Response
 from fastapi import HTTPException
 from fastapi import status
 
-from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from core.models.tweet import Tweets
-
-from core.config.db import connection
-from core.schemas.tweet import CreateTweet, TweetOut, BaseTweet, TweetWithRelations
+from core.schemas.tweet import CreateTweet, TweetOut, BaseTweet
+from core.config.dependency import get_db
+from core.crud import tweet as tweet_crud
 
 
 
@@ -27,8 +24,9 @@ tweet = APIRouter()
     summary="Create a Tweet"
 )
 def create_tweet(
-    tweet: CreateTweet = Body(...)
-    ):
+    tweet: CreateTweet = Body(...),
+    db: Session = Depends(get_db)
+):
     """
     Creates a tweet
     
@@ -47,22 +45,8 @@ def create_tweet(
     - updated_at: **datetime**
     """
     
-    # Create tweet
-    new_tweet = tweet.dict()
-    
-    res = connection.execute(Tweets.insert().values(**new_tweet))
-    
-    if res is None or (res.rowcount == 0):
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Something went wrong!"
-        )
-    
-    new_tweet["id"] = res.lastrowid
-    new_tweet["created_at"] = datetime.datetime.utcnow()
-    new_tweet["updated_at"] = None
-    
-    return new_tweet
+    return tweet_crud.create_tweet(db, tweet)
+   
 
 
 # Get All Tweets
@@ -70,11 +54,15 @@ def create_tweet(
     path="/",
     tags=["Tweets"],
     summary="Get all Tweets",
-    response_model=List[TweetWithRelations],
+    response_model=List[TweetOut],
     status_code=status.HTTP_200_OK,
     
 )
-def get_all_Tweets():
+def get_all_Tweets(
+    skip: Optional[int] = Query(default=0),
+    limit: Optional[int] = Query(default=100),
+    db: Session = Depends(get_db)
+):
     """
     Get All Tweets
     
@@ -92,52 +80,28 @@ def get_all_Tweets():
     - updated_at: **datetime**
     """
     
-    query = """
-    SELECT
-        t.id as 'id',
-        t.content as 'content',
-        t.created_at as 'created_at',
-        t.updated_at as 'updated_at',
-        u.id as 'user.id',
-        u.first_name as 'user.first_name',
-        u.last_name as 'user.last_name',
-        u.birth_date as 'user.birth_date',
-        u.email as 'user.email',
-        u.created_at as 'user.created_at',
-        u.updated_at as 'user.updated_at'
-    FROM
-        tweets as t
-    INNER JOIN
-        users as u
-    ON
-        t.user_id = u.id;
-    """
-    res = connection.execute(text(query)).fetchall()
+    tweets = tweet_crud.get_tweets(db, skip, limit)
     
-    output = []
-    
-    for record in res:
-        output.append(pydottie.transform(record))
-   
-    return output
+    return tweets
 
 
 # Get a tweet
 @tweet.get(
-    path="/{id}",
+    path="/{tweet_id}",
     tags=["Tweets"],
     status_code=status.HTTP_200_OK,
-    response_model=TweetWithRelations,
+    response_model=TweetOut,
     summary="Get a Tweet"
 )
 def get_tweet(
-    id: int = Path(
+    tweet_id: int = Path(
         ...,
         gt=0,
         title=" ID",
         description="The tweet ID you want to get",
         example=1
-    )
+    ),
+    db: Session = Depends(get_db)
 ):
     """
     Get tweet
@@ -157,58 +121,35 @@ def get_tweet(
     - updated_at: **datetime**
     """
     
+    db_tweet = tweet_crud.get_tweet(db, tweet_id)
     
-    query = """
-    SELECT
-        t.id as 'id',
-        t.content as 'content',
-        t.created_at as 'created_at',
-        t.updated_at as 'updated_at',
-        u.id as 'user.id',
-        u.first_name as 'user.first_name',
-        u.last_name as 'user.last_name',
-        u.birth_date as 'user.birth_date',
-        u.email as 'user.email',
-        u.created_at as 'user.created_at',
-        u.updated_at as 'user.updated_at'
-    FROM
-        tweets as t
-    INNER JOIN
-        users as u
-    ON
-        t.user_id = u.id
-    WHERE
-        t.id = :id;
-    """
-    
-    res = connection.execute(text(query), id=id).fetchone()
-    
-    if not res:
+    if db_tweet is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Tweet not found"
+            detail="User Not Found"
         )
         
-    return pydottie.transform(res)
+    return db_tweet
 
 
 # Update a tweet
 @tweet.put(
-    path="/{id}",
+    path="/{tweet_id}",
     tags=["Tweets"],
     status_code=status.HTTP_200_OK,
     summary="Update a Tweet",
     response_model=TweetOut
 )
 def update_tweet(
-    id: int = Path(
+    tweet_id: int = Path(
         ...,
         gt=0,
         title="Tweet ID",
         description="The tweet ID you want to update",
         example=1
     ),
-    tweet: BaseTweet = Body(...)
+    tweet: BaseTweet = Body(...),
+    db: Session = Depends(get_db)
 ):
     """
     Update a tweet
@@ -229,13 +170,18 @@ def update_tweet(
     - updated_at: **Optional[datetime]**
     - user: **UserOut**
     """
-    res = connection.execute(Tweets.select().where(Tweets.c.id == id)).fetchone()
+
+    db_tweet = tweet_crud.get_tweet(db, tweet_id)
     
-    if res is None:
+    if db_tweet is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tweet not found"
         )
+    
+    tweet_crud.update_tweet(db, tweet_id, tweet)
+    
+    return db_tweet
     
     # if res.user_id != request_user.id:
     #     raise HTTPException(
@@ -244,30 +190,22 @@ def update_tweet(
     #     )
     
     
-    # Update tweet
-    connection.execute(Tweets.update(Tweets.c.id == id).values(**tweet.dict()))
-
-    updated_tweet = {**res}    
-    updated_tweet['updated_at'] = str(datetime.datetime.utcnow())
-    
-    return updated_tweet
-    
-    
 # Delete a tweet
 @tweet.delete(
-    path="//{id}",
+    path="/{tweet_id}",
     tags=["Tweets"],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a Tweet"
 )
 def delete_tweet(
-    id: int = Path(
+    tweet_id: int = Path(
         ...,
         gt=0,
         title="Tweet ID",
         description="The tweet ID you want to delete",
         example=1
-    )
+    ),
+    db: Session = Depends(get_db)
 ):
     """
     Delete tweet
@@ -283,23 +221,22 @@ def delete_tweet(
         -
     """
     
-    tweet_response = connection.execute(Tweets.select().where(Tweets.c.id == id)).fetchone()
+    db_tweet = tweet_crud.get_tweet(db, tweet_id)
     
-    if tweet_response is None:
+    if db_tweet is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Tweet not found'
+            detail="Tweet not found"
         )
-        
+    
+    tweet_crud.delete_tweet(db, tweet_id)
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     # if tweet_response.user_id != request_user.id:
     #     raise HTTPException(
     #         status_code=status.HTTP_403_FORBIDDEN,
     #         detail='You are not allowed to perform this action'
     #     )
-        
-    # Delete tweet     
-    connection.execute(Tweets.delete().where(Tweets.c.id == id))
-    
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

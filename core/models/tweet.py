@@ -3,22 +3,21 @@
 from datetime import datetime
 
 #SQLAlchemy
-from sqlalchemy.sql.sqltypes import Integer, String
-from sqlalchemy import TIMESTAMP, ForeignKey, Table, Column
+from sqlalchemy import Integer, String
+from sqlalchemy import TIMESTAMP, ForeignKey, Column
+from sqlalchemy.orm import relationship
 
 #Settings
-from core.config.db import meta, engine
+from core.config.db import Base
 
 #Tweet Table
-Tweets = Table(
-    "tweets",
-    meta,
-    Column("id", Integer, primary_key=True, unique=True, autoincrement=True),
-    Column("content", String(255), nullable=False),
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-    Column("created_at", TIMESTAMP, default=datetime.utcnow),
-    Column("updated_at", TIMESTAMP, default=None, onupdate=datetime.utcnow)
-)
-
-#Create/Generate the table in database
-meta.create_all(engine)
+class Tweet(Base):
+    __tablename__="tweets"
+    
+    id = Column(Integer(), primary_key=True, unique=True, autoincrement=True)
+    content = Column(String(255), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=None, onupdate=datetime.utcnow)
+    
+    owner = relationship("User", back_populates="tweets")

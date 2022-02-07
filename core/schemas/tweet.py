@@ -35,10 +35,14 @@ class CreateTweet(BaseTweet, TweetUserID):
 
 
 class TweetOut( TimestampMixin, TweetUserID, BaseTweet, IDMixin):
-    pass
+    class Config:
+        orm_mode = True
 
 class TweetWithRelations( TimestampMixin, BaseTweet, IDMixin):
 
     user: UserOut = Field(...,
                        title='User who created the tweet',)
+    
+    class Config:
+        orm_mode = True
 

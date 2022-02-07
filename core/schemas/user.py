@@ -1,8 +1,7 @@
 
 #Python
 from datetime import date
-from typing import Optional
-from uuid import UUID
+from typing import Optional, List
 
 #Pydantic
 from pydantic import BaseModel, validator
@@ -51,7 +50,10 @@ class BaseUser(BaseModel):
     
     
 class UserOut(TimestampMixin, BaseUser, IDMixin):
-    pass    
+    # is_active: bool
+    # items: List[Tweet] = []
+    class Config:
+        orm_mode = True
 
 
 class User(PasswordMixin, UserOut):

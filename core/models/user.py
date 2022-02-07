@@ -3,25 +3,29 @@
 from datetime import datetime
 
 #SQLAlchemy
-from sqlalchemy.sql.sqltypes import Integer, String, Date, TIMESTAMP
-from sqlalchemy import Table, Column
+from sqlalchemy import Integer, String, Date, TIMESTAMP, Boolean
+from sqlalchemy import Column
+from sqlalchemy.orm import relationship
+
+from .tweet import Tweet
 
 #Settings
-from core.config.db import meta, engine
+from core.config.db import Base
 
 #User Table
-Users = Table(
-    "users",
-    meta,
-    Column("id", Integer, primary_key=True, unique=True, autoincrement=True),
-    Column("first_name", String(50), nullable=False),
-    Column("last_name", String(50), nullable=False),
-    Column("birth_date", Date, nullable=True),
-    Column("email", String(120), unique=True, nullable=False),
-    Column("password", String(255), nullable=False),
-    Column("created_at", TIMESTAMP, default=datetime.utcnow),
-    Column("updated_at", TIMESTAMP, default=None, onupdate=datetime.utcnow)
-)
+class User(Base):
+    __tablename__="users"
+    
+    id = Column(Integer(), primary_key=True, unique=True, autoincrement=True)
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=False)
+    birth_date = Column(Date, nullable=True)
+    email = Column(String(120), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    # is_active = Column(Boolean, default=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=None, onupdate=datetime.utcnow)
+    
+    tweets = relationship("Tweet", back_populates="owner")
+    
 
-#Create/Generate the table in database
-meta.create_all(engine)

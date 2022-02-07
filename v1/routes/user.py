@@ -1,17 +1,18 @@
 
-import datetime
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Body, Path, Response
+from fastapi import APIRouter, Body, Path, Query, Response
 from fastapi import HTTPException
 from fastapi import status
+from fastapi import Depends
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
 from cryptography.fernet import Fernet
 
-from core.models.user import Users
-from core.config.db import connection
 from core.schemas.user import CreateUser, UserOut
+from core.config.dependency import get_db
+from core.crud import user as user_crud
 
 
 
@@ -29,9 +30,9 @@ fernet = Fernet(key)
     response_model=UserOut,
     summary="Create a user"
 )
-def signup(user: CreateUser = Body(...)):
+def create_user(user: CreateUser = Body(...), db: Session = Depends(get_db)):
     """
-    Sign Up
+    Create a User
     
     This path operation registers a new user.
     
@@ -46,29 +47,36 @@ def signup(user: CreateUser = Body(...)):
     - refresh_token: **str**
     - refresh_token_expiration: **int**
     """
+    db_user = user_crud.get_user_by_email(db, user.email)
     
-    new_user = user.dict()
-    new_user["password"] = fernet.encrypt(user.password.encode("utf-8"))
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email alredy registered"
+        )
+        
+    # res = connection.execute(Users.select().where(Users.columns.email == new_user["email"])).fetchone()
     
-    connection.execute(Users.insert().values(new_user))
+    return user_crud.create_user(db, user)
     
-    res = connection.execute(Users.select().where(Users.columns.email == new_user["email"])).fetchone()
     
-    return res
-
 
 # Read All Users
 @user.get(
     path="/users",
     tags=["Users"],
-    summary="Get all Users",
+    summary="Get Users",
     response_model=List[UserOut],
     status_code=status.HTTP_200_OK,
     
 )
-def get_all_users():
+def get_users(
+    skip: Optional[int] = Query(default=0),
+    limit: Optional[int] = Query(default=100),
+    db: Session = Depends(get_db)
+):
     """
-    Get All Users
+    Get Users
     
     This path operation shows all users.
     
@@ -83,27 +91,29 @@ def get_all_users():
     - created_at: **datetime**
     - updated_at: **datetime**
     """
-    response = connection.execute(Users.select()).fetchall()
+    
+    users = user_crud.get_users(db=db, skip=skip, limit=limit)
    
-    return response
+    return users
 
 
 # Read a user
 @user.get(
-    path="/users/{id}",
+    path="/users/{user_id}",
     tags=["Users"],
     status_code=status.HTTP_200_OK,
     response_model=UserOut,
     summary="Get a User"
 )
 def get_user(
-    id: int = Path(
+    user_id: int = Path(
         ...,
         gt=0,
         title="User ID",
         description="The user ID you want to get",
         example=1
-    )
+    ),
+    db: Session = Depends(get_db)
 ):
     """
     Get user
@@ -123,34 +133,35 @@ def get_user(
     - updated_at: **datetime**
     """
     
-    res = connection.execute(Users.select().where(Users.columns.id == id)).fetchone()
+    db_user = user_crud.get_user(db, user_id)
     
-    if res is None:
+    if db_user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail="User Not Found"
         )
         
-    return res
+    return db_user
 
 
 # Update a user
 @user.put(
-    path="/users/{id}",
+    path="/users/{user_id}",
     tags=["Users"],
     status_code=status.HTTP_200_OK,
     summary="Update a User",
     response_model=UserOut
 )
 def update_user(
-    id: int = Path(
+    user_id: int = Path(
         ...,
         gt=0,
         title="User ID",
         description="The user ID you want to update",
         example=1
     ),
-    user: CreateUser = Body(...)
+    user: CreateUser = Body(...),
+    db: Session = Depends(get_db)
 ):
     """
     Update user.
@@ -172,13 +183,17 @@ def update_user(
     - created_at: **datetime**
     - updated_at: **datetime**
     """
-    res = connection.execute(Users.select().where(Users.c.id == id)).fetchone()
     
-    if res is None:
+    
+    db_user = user_crud.get_user_by_email(db, user.email)
+    
+    if db_user is not None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email alredy registered"
         )
+    
+    return user_crud.update_user(db, user_id, user)
     
     # if res.id != request_user.id:
     #     raise HTTPException(
@@ -186,48 +201,23 @@ def update_user(
     #         detail="You are not allowed to perfom this action"
     #     )
     
-    # Update user
-    updated_user = {
-        **res,
-        **user.dict()
-    }
-    
-    updated_user["password"] = fernet.encrypt(user.password.encode("utf-8"))
-    
-    # Save User
-    try:
-        connection.execute(Users.update(Users.c.id == id).values(**updated_user))
-    except IntegrityError as e:
-        
-        if "Duplicate entry" in str(e) and "users.email" in str(e):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Email {user.email} already exist!"
-            )
-            
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='Internal server error.') from e
-        
-    updated_user['updated_at'] = str(datetime.datetime.utcnow())
-    
-    return updated_user
-    
     
 # Delete a user
 @user.delete(
-    path="/users/{id}",
+    path="/users/{user_id}",
     tags=["Users"],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a User"
 )
 def delete_user(
-    id: int = Path(
+    user_id: int = Path(
         ...,
         gt=0,
         title="User ID",
-        description="The user ID you want to delete"
-    )
+        description="The user ID you want to delete",
+        example=1
+    ),
+    db: Session = Depends(get_db)
 ):
     """
     Delete user
@@ -243,21 +233,21 @@ def delete_user(
         -
     """
     
-    user_response = connection.execute(Users.select().where(Users.c.id == id)).fetchone()
+    db_user = user_crud.get_user(db, user_id)
     
-    if user_response is None:
+    if db_user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='User not found'
+            detail="User Not Found"
         )
+        
+    user_crud.delete_user(db, user_id)
+        
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
         
     # if user_response.id != request_user.id:
     #     raise HTTPException(
     #         status_code=status.HTTP_403_FORBIDDEN,
     #         detail='You are not allowed to perform this action'
     #     )
-        
-    # Delete user     
-    connection.execute(Users.delete().where(Users.c.id == id))
     
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
