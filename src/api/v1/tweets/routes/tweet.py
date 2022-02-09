@@ -8,9 +8,11 @@ from fastapi import status
 from sqlalchemy.orm import Session
 
 from api.v1.tweets.schemas.tweet import CreateTweet, TweetOut, BaseTweet
-from config.dependency import get_db
 from api.v1.tweets.services import tweet as tweet_crud
+from api.v1.users.schemas.user import  User as UserSchema
 
+from config.dependency import get_db
+from api.v1.auth.middlewares.auth import get_current_user
 
 
 tweet = APIRouter()
@@ -24,8 +26,9 @@ tweet = APIRouter()
     summary="Create a Tweet"
 )
 def create_tweet(
-    tweet: CreateTweet = Body(...),
-    db: Session = Depends(get_db)
+    tweet: BaseTweet = Body(...),
+    db: Session = Depends(get_db),
+    request_user: UserSchema = Depends(get_current_user),
 ):
     """
     Creates a tweet
@@ -44,8 +47,11 @@ def create_tweet(
     - created_at: **datetime**
     - updated_at: **datetime**
     """
-    
-    return tweet_crud.create_tweet(db, tweet)
+    new_tweet = {
+        "user_id": request_user.id,
+        "content": tweet.content
+    }
+    return tweet_crud.create_tweet(db, CreateTweet(**new_tweet))
    
 
 
@@ -149,7 +155,8 @@ def update_tweet(
         example=1
     ),
     tweet: BaseTweet = Body(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request_user: UserSchema = Depends(get_current_user),
 ):
     """
     Update a tweet
@@ -179,15 +186,15 @@ def update_tweet(
             detail="Tweet not found"
         )
     
+    if db_tweet.user_id != request_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You are not allowed to perfom this action'
+        )
+        
     tweet_crud.update_tweet(db, tweet_id, tweet)
     
     return db_tweet
-    
-    # if res.user_id != request_user.id:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_403_FORBIDDEN,
-    #         detail="You are not allowed to perfom this action"
-    #     )
     
     
 # Delete a tweet
@@ -205,7 +212,8 @@ def delete_tweet(
         description="The tweet ID you want to delete",
         example=1
     ),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request_user: UserSchema = Depends(get_current_user),
 ):
     """
     Delete tweet
@@ -229,14 +237,13 @@ def delete_tweet(
             detail="Tweet not found"
         )
     
+    if db_tweet.user_id != request_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You are not allowed to perfom this action'
+        )
+        
     tweet_crud.delete_tweet(db, tweet_id)
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    # if tweet_response.user_id != request_user.id:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_403_FORBIDDEN,
-    #         detail='You are not allowed to perform this action'
-    #     )
-
 

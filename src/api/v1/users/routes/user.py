@@ -10,57 +10,17 @@ from sqlalchemy.orm import Session
 
 from cryptography.fernet import Fernet
 
-from api.v1.users.schemas.user import CreateUser, UserOut
+from api.v1.users.schemas.user import CreateUser, UserOut, User as UserSchema
 from config.dependency import get_db
 from api.v1.users.services import user as user_crud
-
-
+from api.v1.auth.middlewares.auth import get_current_user
 
 user = APIRouter()
 
 # Password encription configuration
 key = Fernet.generate_key()
 fernet = Fernet(key)
-
-#Create a user
-@user.post(
-    path="/users",
-    status_code=status.HTTP_201_CREATED,
-    tags=["Users"],
-    response_model=UserOut,
-    summary="Create a user"
-)
-def create_user(user: CreateUser = Body(...), db: Session = Depends(get_db)):
-    """
-    Create a User
     
-    This path operation registers a new user.
-    
-    Parameters:
-    - Request body parameters:
-        - user: **UserRegister**
-        
-    Returns a json object with the information of the registered user and its credentials.
-    - user: **UserOut**
-    - access_token: **str**
-    - access_token_expiration: **int**
-    - refresh_token: **str**
-    - refresh_token_expiration: **int**
-    """
-    db_user = user_crud.get_user_by_email(db, user.email)
-    
-    if db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email alredy registered"
-        )
-        
-    # res = connection.execute(Users.select().where(Users.columns.email == new_user["email"])).fetchone()
-    
-    return user_crud.create_user(db, user)
-    
-    
-
 # Read All Users
 @user.get(
     path="/users",
@@ -161,7 +121,8 @@ def update_user(
         example=1
     ),
     user: CreateUser = Body(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request_user: UserSchema = Depends(get_current_user),
 ):
     """
     Update user.
@@ -184,22 +145,28 @@ def update_user(
     - updated_at: **datetime**
     """
     
-    
     db_user = user_crud.get_user_by_email(db, user.email)
     
+    if db_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User not found'
+        )
+        
     if db_user is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email alredy registered"
         )
+     
+    if db_user.id != request_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to perfom this action"
+        )   
     
     return user_crud.update_user(db, user_id, user)
     
-    # if res.id != request_user.id:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_403_FORBIDDEN,
-    #         detail="You are not allowed to perfom this action"
-    #     )
     
     
 # Delete a user
@@ -217,7 +184,8 @@ def delete_user(
         description="The user ID you want to delete",
         example=1
     ),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request_user: UserSchema = Depends(get_current_user),
 ):
     """
     Delete user
@@ -241,13 +209,13 @@ def delete_user(
             detail="User Not Found"
         )
         
+    if db_user.id != request_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not allowed to perfom this action"
+        )
+        
     user_crud.delete_user(db, user_id)
         
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-        
-    # if user_response.id != request_user.id:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_403_FORBIDDEN,
-    #         detail='You are not allowed to perform this action'
-    #     )
     

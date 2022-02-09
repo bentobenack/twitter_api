@@ -1,5 +1,6 @@
 
 from sqlalchemy.orm import Session
+from api.v1.auth.utils.password import hash_password
 
 from api.v1.users.models.user import User
 from api.v1.users.schemas.user import CreateUser
@@ -15,7 +16,7 @@ fernet = Fernet(key)
 def create_user(db: Session, user: CreateUser):
     
     new_user = user.dict()
-    new_user["password"] = fernet.encrypt(user.password.encode("utf-8"))
+    new_user["password"] = hash_password(new_user['password'])
     
     db_user = User(**new_user)
     db.add(db_user)
