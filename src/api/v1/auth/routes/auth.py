@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from config.dependency import get_db
+from config.db_config import get_db
 from api.v1.users.services import user as user_crud
 
 # Schemas

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from cryptography.fernet import Fernet
 
 from api.v1.users.schemas.user import CreateUser, UserOut, User as UserSchema
-from config.dependency import get_db
+from config.db_config import get_db
 from api.v1.users.services import user as user_crud
 from api.v1.auth.middlewares.auth import get_current_user
 
@@ -20,10 +20,24 @@ user = APIRouter()
 # Password encription configuration
 key = Fernet.generate_key()
 fernet = Fernet(key)
-    
+
+#Get current User
+@user.get(
+    path="/me",
+    tags=["Users"],
+    summary="Get Me",
+    response_model=UserOut,
+    status_code=status.HTTP_200_OK
+)
+def get_me(
+    request_user: UserSchema = Depends(get_current_user),
+):
+    return request_user
+
+
 # Read All Users
 @user.get(
-    path="/users",
+    path="/",
     tags=["Users"],
     summary="Get Users",
     response_model=List[UserOut],
@@ -59,7 +73,7 @@ def get_users(
 
 # Read a user
 @user.get(
-    path="/users/{user_id}",
+    path="/{user_id}",
     tags=["Users"],
     status_code=status.HTTP_200_OK,
     response_model=UserOut,
@@ -106,7 +120,7 @@ def get_user(
 
 # Update a user
 @user.put(
-    path="/users/{user_id}",
+    path="/{user_id}",
     tags=["Users"],
     status_code=status.HTTP_200_OK,
     summary="Update a User",
@@ -171,7 +185,7 @@ def update_user(
     
 # Delete a user
 @user.delete(
-    path="/users/{user_id}",
+    path="/{user_id}",
     tags=["Users"],
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a User"

@@ -24,6 +24,8 @@ PORT = os.environ.get('PORT')
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 # JWT
+ALGORITHM = "HS256"
+
 JWT_ACCESS_TOKEN_TYPE = 'access'
 JWT_ACCESS_TOKEN_EXPIRATION = 60 * 24 # 1 day
 

@@ -14,7 +14,7 @@ from config import settings
 from api.v1.auth.utils.jwt import verify_token
 
 # Database
-from config.dependency import get_db
+from config.db_config import get_db
 from api.v1.users.services import user as user_crud
 
 from fastapi import Depends
@@ -53,9 +53,11 @@ def validate_acccess_token(token: str = Depends(JWTBearer())) -> Dict[str, Any]:
         Dict[str, Any]: User data.
     """
 
-    base_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                   detail='Invalid credentials.',
-                                   headers={'WWW-Authenticate': 'Bearer'})
+    base_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail='Invalid credentials.',
+        headers={'WWW-Authenticate': 'Bearer'}
+    )
 
     decoded_token = verify_token(token)
 

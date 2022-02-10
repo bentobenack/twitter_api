@@ -28,7 +28,7 @@ def create_access_token(data: dict) -> Tuple[str, float]:
     payload['exp'] = expiration_time
     payload['iat'] = datetime.utcnow().timestamp()
 
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
     return token, expiration_time
 
@@ -50,7 +50,7 @@ def create_refresh_token(data: dict) -> Tuple[str, float]:
     payload['exp'] = expiration_time
     payload['iat'] = datetime.utcnow().timestamp()
 
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
     return token, expiration_time
 
@@ -102,7 +102,7 @@ def verify_token(token: str) -> Union[Dict[str, Any], None]:
     """
 
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except jwt.exceptions.InvalidSignatureError:
         return None
     except jwt.exceptions.ExpiredSignatureError:

@@ -22,6 +22,6 @@ app = FastAPI(
     ]
 )
 
-app.include_router(user_router)
+app.include_router(user_router, prefix="/users")
 app.include_router(tweet_router, prefix="/tweets")
 app.include_router(auth_router, prefix="/auth")

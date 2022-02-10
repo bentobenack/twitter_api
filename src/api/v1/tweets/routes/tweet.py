@@ -11,7 +11,7 @@ from api.v1.tweets.schemas.tweet import CreateTweet, TweetOut, BaseTweet
 from api.v1.tweets.services import tweet as tweet_crud
 from api.v1.users.schemas.user import  User as UserSchema
 
-from config.dependency import get_db
+from config.db_config import get_db
 from api.v1.auth.middlewares.auth import get_current_user
 
 
