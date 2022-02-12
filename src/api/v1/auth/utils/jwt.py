@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 import jwt
 
 from typing import Tuple
@@ -22,15 +23,16 @@ def create_access_token(data: dict) -> Tuple[str, float]:
 
     payload = data.copy()
 
-    expiration_time = (datetime.utcnow() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRATION)).timestamp()
+    
+    expiration_time = (datetime.utcnow() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRATION))
 
     payload['type'] = settings.JWT_ACCESS_TOKEN_TYPE
-    payload['exp'] = expiration_time
-    payload['iat'] = datetime.utcnow().timestamp()
-
+    payload['exp'] = expiration_time.timestamp()
+    payload['iat'] = (expiration_time - timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRATION)).timestamp()
+    
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-    return token, expiration_time
+    return token, payload['exp'], payload['iat']
 
 
 def create_refresh_token(data: dict) -> Tuple[str, float]:
@@ -44,15 +46,16 @@ def create_refresh_token(data: dict) -> Tuple[str, float]:
 
     payload = data.copy()
 
-    expiration_time = (datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRATION)).timestamp()
+    
+    expiration_time = (datetime.utcnow() + timedelta(minutes=settings.JWT_REFRESH_TOKEN_EXPIRATION))
 
     payload['type'] = settings.JWT_REFRESH_TOKEN_TYPE
-    payload['exp'] = expiration_time
-    payload['iat'] = datetime.utcnow().timestamp()
+    payload['exp'] = expiration_time.timestamp()
+    payload['iat'] = (expiration_time - timedelta(minutes=settings.JWT_REFRESH_TOKEN_EXPIRATION)).timestamp()
 
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
-    return token, expiration_time
+    return token, payload['exp'], payload['iat']
 
 
 def create_credentials(user: Union[dict, UserOut]) -> Dict[str, Any]:
@@ -77,16 +80,16 @@ def create_credentials(user: Union[dict, UserOut]) -> Dict[str, Any]:
             'name': user.first_name + " " + user.last_name,
         }
 
-    access_token, access_expiration_time = create_access_token(user_payload)
-    refresh_token, refresh_expiration_time = create_refresh_token({
+    access_token, access_expiration_time, access_created_time = create_access_token(user_payload)
+    refresh_token, refresh_expiration_time, refresh_created_time = create_refresh_token({
         'sub': user_payload['sub'],
     })
 
     output = {
         'access_token': access_token,
-        'access_token_expiration': access_expiration_time,
+        'access_token_expiration': access_expiration_time - access_created_time,
         'refresh_token': refresh_token,
-        'refresh_token_expiration': refresh_expiration_time
+        'refresh_token_expiration': refresh_expiration_time - refresh_created_time
     }
 
     return output
@@ -110,4 +113,10 @@ def verify_token(token: str) -> Union[Dict[str, Any], None]:
     except jwt.exceptions.DecodeError:
         return None
 
+    if payload["exp"] < datetime.utcnow().timestamp():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     return payload

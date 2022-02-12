@@ -163,7 +163,7 @@ def refresh_token(refresh_token: BaseJWTRefreshToken = Body(...), db: Session = 
     if db_user is None:
         raise base_exception
 
-    token, expiration = create_access_token({
+    token, expiration, created_time = create_access_token({
         'sub': db_user.id,
         'email': db_user.email,
         'name': db_user.first_name + " " + db_user.last_name,
@@ -171,7 +171,7 @@ def refresh_token(refresh_token: BaseJWTRefreshToken = Body(...), db: Session = 
 
     response = {
         'access_token': token,
-        'access_token_expiration': expiration,
+        'access_token_expiration': expiration - created_time,
     }
 
     return response

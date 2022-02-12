@@ -43,7 +43,7 @@ class JWTRefreshToken(BaseJWTRefreshToken):
     )
 
 
-class JWTCredentials(JWTAccessToken, JWTRefreshToken):
+class JWTCredentials(JWTRefreshToken, JWTAccessToken):
     pass
 
 

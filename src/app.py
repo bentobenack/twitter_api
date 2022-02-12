@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 
 from api.v1.users.routes.user import user as user_router
 from api.v1.tweets.routes.tweet import tweet as tweet_router
@@ -25,3 +25,7 @@ app = FastAPI(
 app.include_router(user_router, prefix="/users")
 app.include_router(tweet_router, prefix="/tweets")
 app.include_router(auth_router, prefix="/auth")
+
+@app.get(path="/", status_code=status.HTTP_200_OK, tags=["Home"])
+def home():
+    return {"message": "Welcome to Twitter API"}
