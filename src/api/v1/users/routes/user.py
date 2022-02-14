@@ -236,3 +236,19 @@ def delete_user(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
     
     
+# Upload Image Profile
+@user.post(
+    path="/upload/img",
+    status_code=status.HTTP_200_OK,
+    summary="Upload Image Profile",
+    tags=["Users"]
+)
+def upload_img_profile(
+    img: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    request_user: UserSchema = Depends(get_current_user),
+):
+    pass
+
+
+
