@@ -1,2 +1,4 @@
 venv/
 __pycache__/
+src/api/v1/static_files/profile_imgs/*
+src/api/v1/static_files/tweets/*

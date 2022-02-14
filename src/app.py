@@ -5,8 +5,8 @@ from fastapi import FastAPI, status
 from api.v1.users.routes.user import user as user_router
 from api.v1.tweets.routes.tweet import tweet as tweet_router
 from api.v1.auth.routes.auth import auth as auth_router
+from api.v1.files.routes.file import file as file_router
 from config.db_config import Base, engine
-from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
     title="Twitter API",
@@ -31,8 +31,7 @@ def home():
 app.include_router(user_router, prefix="/api/v1/users")
 app.include_router(tweet_router, prefix="/api/v1/tweets")
 app.include_router(auth_router, prefix="/api/v1/auth")
-
-# app.mount("/static", StaticFiles(directory="static"), name="static")
+app.include_router(file_router, prefix="/api/v1/files")
 
 Base.metadata.create_all(bind=engine)
 

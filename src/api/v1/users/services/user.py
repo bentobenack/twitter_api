@@ -1,4 +1,5 @@
 
+from typing import Any
 from sqlalchemy.orm import Session
 from api.v1.auth.utils.password import hash_password
 
@@ -49,6 +50,15 @@ def update_user(db: Session, user_id: int, user: CreateUser):
     updated_user["password"] = fernet.encrypt(user.password.encode("utf-8"))
     
     db.query(User).filter(User.id == user_id).update({**updated_user})
+    db.commit()
+    
+    return get_user(db, user_id)
+
+
+# Update user specific field
+def update_user_specific_fild(db: Session, user_id: int, field: str, content):
+    
+    db.query(User).filter(User.id == user_id).update({field: content})
     db.commit()
     
     return get_user(db, user_id)

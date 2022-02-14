@@ -7,8 +7,6 @@ from sqlalchemy import Integer, String, Date, TIMESTAMP, Boolean
 from sqlalchemy import Column
 from sqlalchemy.orm import relationship
 
-from ...tweets.models.tweet import Tweet
-
 #Settings
 from config.db_config import Base
 
@@ -23,9 +21,10 @@ class User(Base):
     email = Column(String(120), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
     disabled = Column(Boolean, default=False)
-    img_url = Column(String(255), unique=True, nullable=True)
+    file_url = Column(String(255), unique=True, nullable=True)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=None, onupdate=datetime.utcnow)
     
-    tweets = relationship("Tweet", back_populates="owner")
+    tweets = relationship("Tweet", back_populates="owner_user")
+    files = relationship("File", back_populates="owner_user")
     

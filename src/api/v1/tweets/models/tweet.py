@@ -20,4 +20,5 @@ class Tweet(Base):
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=None, onupdate=datetime.utcnow)
     
-    owner = relationship("User", back_populates="tweets")
+    owner_user = relationship("User", back_populates="tweets")
+    files = relationship("File", back_populates="owner_tweet")

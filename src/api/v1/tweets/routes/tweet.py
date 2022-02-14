@@ -1,7 +1,8 @@
 
+from os import getcwd
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, Path, Query, Response
+from fastapi import APIRouter, Body, Depends, File, Path, Query, Response, UploadFile
 from fastapi import HTTPException
 from fastapi import status
 
@@ -138,6 +139,49 @@ def get_tweet(
     return db_tweet
 
 
+# Get Tweets by user
+@tweet.get(
+    path="/user/{user_id}",
+    tags=["Tweets"],
+    summary="Get Tweets by specific user",
+    response_model=List[TweetOut],
+    status_code=status.HTTP_200_OK,
+    
+)
+def get_all_Tweets(
+    user_id: int = Path(
+        ...,
+        gt=0,
+        title=" ID",
+        description="The user id you want to get the tweets",
+        example=1
+    ),
+    skip: Optional[int] = Query(default=0),
+    limit: Optional[int] = Query(default=100),
+    db: Session = Depends(get_db)
+):
+    """
+    Get Tweets by specific user
+    
+    This path operation shows all Tweets in the app.
+    
+    Parameters:
+        - 
+        
+    Returns a list of json object with the tweet information:
+    
+    - id: **int**
+    - content: **str**
+    - user_id: **int**
+    - created_at: **datetime**
+    - updated_at: **datetime**
+    """
+    
+    tweets = tweet_crud.get_tweets_by_user(db, user_id, skip, limit)
+    
+    return tweets
+
+
 # Update a tweet
 @tweet.put(
     path="/{tweet_id}",
@@ -246,4 +290,5 @@ def delete_tweet(
     tweet_crud.delete_tweet(db, tweet_id)
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 

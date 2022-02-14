@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, File, Path, Query, Response, UploadFile
 from fastapi import HTTPException
 from fastapi import status
 from fastapi import Depends
+from fastapi.responses import FileResponse
 
 from sqlalchemy.orm import Session
 
@@ -15,7 +16,8 @@ from config.db_config import get_db
 from api.v1.users.services import user as user_crud
 from api.v1.auth.middlewares.auth import get_current_user
 
-from os import getcwd
+from os import getcwd, remove
+import shutil
 
 user = APIRouter()
 
@@ -236,19 +238,100 @@ def delete_user(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
     
     
-# Upload Image Profile
-@user.post(
-    path="/upload/img",
-    status_code=status.HTTP_200_OK,
-    summary="Upload Image Profile",
-    tags=["Users"]
-)
-def upload_img_profile(
-    img: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    request_user: UserSchema = Depends(get_current_user),
-):
-    pass
+# # Upload Image Profile
+# @user.post(
+#     path="/profile/img",
+#     status_code=status.HTTP_200_OK,
+#     summary="Upload a Profile Img",
+#     tags=["Users"],
+#     response_model=UserOut
+# )
+# def upload_profile_img(
+#     img: UploadFile = File(...),
+#     db: Session = Depends(get_db),
+#     request_user: UserSchema = Depends(get_current_user),
+# ):
+#     db_user = user_crud.get_user(db, request_user.id)
+    
+#     if db_user is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User Not Found"
+#         )
+        
+#     if db_user.id != request_user.id:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="You are not allowed to perfom this action"
+#         )
+        
+#     path = getcwd() + "/src/api/v1/files/profile_imgs/"
+#     new_filename = str(request_user.id) + "." + img.content_type.split("/")[1]
+    
+#     with open(path + new_filename, "wb") as f:
+#         shutil.copyfileobj(img.file, f)
+        
+#     return user_crud.update_user_specific_fild(db, request_user.id, "file_url", path + new_filename)
+
+    
+# #Get a Profile Picture
+# @user.get(
+#     path="/profile/img",
+#     status_code=status.HTTP_200_OK,
+#     summary="Get a Profile Img",
+#     tags=["Users"]
+# )
+# def get_profile_img(
+#     db: Session = Depends(get_db),
+#     request_user: UserSchema = Depends(get_current_user),
+# ):
+#     db_user = user_crud.get_user(db, request_user.id)
+    
+#     if db_user is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User Not Found"
+#         )
+        
+#     if db_user.id != request_user.id:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="You are not allowed to perfom this action"
+#         )
+        
+#     return FileResponse(db_user.file_url)
 
 
-
+# #Delete a Profile Picture
+# @user.delete(
+#     path="/profile/img",
+#     status_code=status.HTTP_200_OK,
+#     summary="Delete a Profile Img",
+#     tags=["Users"]
+# )
+# def delete_profile_img(
+#     db: Session = Depends(get_db),
+#     request_user: UserSchema = Depends(get_current_user),
+# ):
+#     db_user = user_crud.get_user(db, request_user.id)
+    
+#     if db_user is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND,
+#             detail="User Not Found"
+#         )
+        
+#     if db_user.id != request_user.id:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="You are not allowed to perfom this action"
+#         )
+        
+#     try:
+#         remove(db_user.file_url)
+#     except FileNotFoundError:
+#         HTTPException(
+#             status_code=status.HTTP_404_NOT_FOUND, 
+#             detail="File not Found"
+#         )
+    

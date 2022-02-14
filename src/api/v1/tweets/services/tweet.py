@@ -33,10 +33,19 @@ def update_tweet(db: Session, tweet_id: int, tweet: CreateTweet):
     db.commit()
 
 
+# Update a tweet in a specific field
+def update_tweet_specific_fild(db: Session, tweet_id: int, field: str, content):
+    
+    db.query(Tweet).filter(Tweet.id == tweet_id).update({field: content})
+    db.commit()
+    
+    
 # Delete a Tweet
 def delete_tweet(db: Session, tweet_id: int):
     res = db.query(Tweet).filter(Tweet.id == tweet_id).delete()
     db.commit()
     
     
-    
+# Get Tweets by user
+def get_tweets_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    return db.query(Tweet).filter(Tweet.user_id == user_id).offset(skip).limit(limit).all()

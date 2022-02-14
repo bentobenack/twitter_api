@@ -49,10 +49,8 @@ class BaseUser(BaseModel):
             return v
     
     
-    
 class UserOut(TimestampMixin, BaseUser, IDMixin):
     disabled: bool = Field(default=None)
-    # items: List[Tweet] = []
     class Config:
         orm_mode = True
 
