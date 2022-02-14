@@ -22,10 +22,10 @@ class User(Base):
     birth_date = Column(Date, nullable=True)
     email = Column(String(120), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    # is_active = Column(Boolean, default=False)
+    disabled = Column(Boolean, default=False)
+    img_url = Column(String(255), unique=True, nullable=False)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=None, onupdate=datetime.utcnow)
     
     tweets = relationship("Tweet", back_populates="owner")
     
-

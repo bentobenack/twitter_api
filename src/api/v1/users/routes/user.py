@@ -1,7 +1,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Path, Query, Response
+from fastapi import APIRouter, Body, File, Path, Query, Response, UploadFile
 from fastapi import HTTPException
 from fastapi import status
 from fastapi import Depends
@@ -14,6 +14,8 @@ from api.v1.users.schemas.user import CreateUser, UserOut, User as UserSchema
 from config.db_config import get_db
 from api.v1.users.services import user as user_crud
 from api.v1.auth.middlewares.auth import get_current_user
+
+from os import getcwd
 
 user = APIRouter()
 
@@ -232,4 +234,5 @@ def delete_user(
     user_crud.delete_user(db, user_id)
         
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+    
     

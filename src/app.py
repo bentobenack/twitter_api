@@ -5,7 +5,8 @@ from fastapi import FastAPI, status
 from api.v1.users.routes.user import user as user_router
 from api.v1.tweets.routes.tweet import tweet as tweet_router
 from api.v1.auth.routes.auth import auth as auth_router
-
+from config.db_config import Base, engine
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
     title="Twitter API",
@@ -23,12 +24,21 @@ app = FastAPI(
     ]
 )
 
-# app.add_middleware(HTTPSRedirectMiddleware)
+@app.get(path="/", status_code=status.HTTP_200_OK, tags=["Home"])
+def home():
+    return {"message": "Welcome to Twitter API"}
 
 app.include_router(user_router, prefix="/api/v1/users")
 app.include_router(tweet_router, prefix="/api/v1/tweets")
 app.include_router(auth_router, prefix="/api/v1/auth")
 
-@app.get(path="/", status_code=status.HTTP_200_OK, tags=["Home"])
-def home():
-    return {"message": "Welcome to Twitter API"}
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+
+Base.metadata.create_all(bind=engine)
+
+    
+    
+# app.add_middleware(HTTPSRedirectMiddleware)
+
+    
+

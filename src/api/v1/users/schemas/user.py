@@ -2,6 +2,7 @@
 #Python
 from datetime import date
 from typing import Optional, List
+from fastapi import File, UploadFile
 
 #Pydantic
 from pydantic import BaseModel, validator
@@ -50,7 +51,7 @@ class BaseUser(BaseModel):
     
     
 class UserOut(TimestampMixin, BaseUser, IDMixin):
-    # is_active: bool
+    is_active: bool = Field(default=None)
     # items: List[Tweet] = []
     class Config:
         orm_mode = True
